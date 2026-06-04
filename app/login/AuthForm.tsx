@@ -11,7 +11,9 @@ export default function AuthForm() {
   const router = useRouter();
   const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("login");
+  const [identifier, setIdentifier] = useState(""); // login: username OR email
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,10 +23,12 @@ export default function AuthForm() {
     setError(null);
     setLoading(true);
     try {
+      const payload =
+        mode === "signup" ? { email, username, password } : { identifier, password };
       const res = await fetch(`/api/auth/${mode}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -76,19 +80,52 @@ export default function AuthForm() {
       </div>
 
       <form onSubmit={submit} className="space-y-3">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted">{t("Email", "Imejl")}</label>
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
-          />
-        </div>
+        {mode === "login" ? (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted">
+              {t("Username or email", "Korisničko ime ili imejl")}
+            </label>
+            <input
+              type="text"
+              autoComplete="username"
+              required
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder={t("username or you@example.com", "korisnik ili ti@primer.com")}
+              className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+            />
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">
+                {t("Username", "Korisničko ime")}
+              </label>
+              <input
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder={t("e.g. filip21", "npr. filip21")}
+                className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">{t("Email", "Imejl")}</label>
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
+              />
+            </div>
+          </>
+        )}
         <div>
           <label className="mb-1 block text-xs font-medium text-muted">
             {t("Password", "Lozinka")}

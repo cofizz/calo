@@ -16,6 +16,8 @@ datasource db {
 model User {
   id           String      @id @default(cuid())
   email        String      @unique
+  // Unique handle (lowercase). Nullable so pre-existing accounts stay valid.
+  username     String?     @unique
   // Always store the bcrypt HASH, never the plain password.
   passwordHash String
   // Daily calorie goal (kcal). Friendly default.

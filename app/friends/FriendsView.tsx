@@ -26,6 +26,8 @@ export default function FriendsView() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
   const load = useCallback(async () => {
     const res = await fetch(`/api/friends?today=${todayString()}`, { cache: "no-store" });
     if (res.ok) {
@@ -36,9 +38,18 @@ export default function FriendsView() {
     setLoading(false);
   }, []);
 
+  const loadSuggestions = useCallback(async () => {
+    const res = await fetch("/api/users", { cache: "no-store" });
+    if (res.ok) {
+      const d = await res.json();
+      setSuggestions(d.users.map((u: { username: string }) => u.username).filter(Boolean));
+    }
+  }, []);
+
   useEffect(() => {
     load();
-  }, [load]);
+    loadSuggestions();
+  }, [load, loadSuggestions]);
 
   async function addFriend(e: React.FormEvent) {
     e.preventDefault();
@@ -48,7 +59,7 @@ export default function FriendsView() {
       const res = await fetch("/api/friends", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ to: email }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -63,6 +74,7 @@ export default function FriendsView() {
       });
       setEmail("");
       load();
+      loadSuggestions();
     } catch {
       setMsg({ text: t("Network error", "Greška u mreži"), ok: false });
     } finally {
@@ -100,14 +112,19 @@ export default function FriendsView() {
           <p className="mb-2 text-sm font-medium">{t("Add a friend", "Dodaj prijatelja")}</p>
           <div className="flex gap-2">
             <input
-              type="email"
-              inputMode="email"
+              type="text"
+              list="user-suggestions"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("their@email.com", "njihov@imejl.com")}
+              placeholder={t("username or email", "korisničko ime ili imejl")}
               className="min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
             />
+            <datalist id="user-suggestions">
+              {suggestions.map((u) => (
+                <option key={u} value={u} />
+              ))}
+            </datalist>
             <button
               type="submit"
               disabled={sending}

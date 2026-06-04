@@ -3,24 +3,42 @@
 // if data doesn't match these exact shapes, the request is rejected.
 import { z } from "zod";
 
-export const credentialsSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .email("Please enter a valid email address")
-    .max(254),
-  // Min 8 chars is the practical minimum for a usable password.
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(200, "Password is too long"),
+const emailField = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email("Please enter a valid email address")
+  .max(254);
+
+const passwordField = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(200, "Password is too long");
+
+export const usernameField = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9_]{3,20}$/, "Username: 3-20 letters, numbers or _");
+
+// Sign up needs email + username + password.
+export const signupSchema = z.object({
+  email: emailField,
+  username: usernameField,
+  password: passwordField,
+});
+
+// Log in with either a username or an email (single identifier field).
+export const loginSchema = z.object({
+  identifier: z.string().trim().min(1, "Enter your username or email").max(254),
+  password: z.string().min(1, "Enter your password").max(200),
 });
 
 export const mealSchema = z.enum(["breakfast", "lunch", "dinner", "snack"]);
 
 export const friendRequestSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Enter a valid email").max(254),
+  // A username or an email.
+  to: z.string().trim().toLowerCase().min(1, "Enter a username or email").max(254),
 });
 
 // A YYYY-MM-DD date string. Rejects anything that isn't a real calendar day.

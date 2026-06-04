@@ -31,10 +31,10 @@ export async function GET(req: Request) {
   // Names for the people on the board.
   const users = await prisma.user.findMany({
     where: { id: { in: totals.map((t) => t.userId) } },
-    select: { id: true, name: true, email: true },
+    select: { id: true, username: true, name: true, email: true },
   });
   const nameOf = new Map(
-    users.map((u) => [u.id, u.name?.trim() || u.email.split("@")[0]]),
+    users.map((u) => [u.id, u.username?.trim() || u.name?.trim() || u.email.split("@")[0]]),
   );
 
   const ranked = totals.map((t, i) => ({

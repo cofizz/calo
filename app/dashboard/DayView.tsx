@@ -89,6 +89,7 @@ export default function DayView({
   const [showCalc, setShowCalc] = useState(false);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingReqs, setPendingReqs] = useState(0);
 
   const loadEntries = useCallback(
     async (d: string) => {
@@ -133,6 +134,11 @@ export default function DayView({
   useEffect(() => {
     loadFoods();
     loadMeals();
+    // Friend-request badge count.
+    fetch("/api/friends/pending", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { count: 0 }))
+      .then((d) => setPendingReqs(d.count ?? 0))
+      .catch(() => {});
   }, [loadFoods, loadMeals]);
 
   // Recompute the streak whenever the day's entries or the goal change.
@@ -292,40 +298,52 @@ export default function DayView({
             <span className="text-xl">🍃</span>
             <span className="font-semibold">Calo</span>
           </div>
-          {/* Burger menu */}
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen((o) => !o)}
-              aria-label="Menu"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg text-foreground"
-            >
-              {menuOpen ? "✕" : "☰"}
-            </button>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-11 z-30 w-48 rounded-2xl border border-border bg-surface p-2 shadow-2xl shadow-black/50">
-                  <div className="mb-2 flex justify-center border-b border-border pb-2">
-                    <LangToggle />
+          <div className="flex items-center gap-3">
+            {/* Language toggle lives in the header, not the burger menu */}
+            <LangToggle />
+
+            {/* Burger menu */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label="Menu"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg text-foreground"
+              >
+                {menuOpen ? "✕" : "☰"}
+                {pendingReqs > 0 && !menuOpen && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+                    {pendingReqs}
+                  </span>
+                )}
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 top-11 z-30 w-48 rounded-2xl border border-border bg-surface p-2 shadow-2xl shadow-black/50">
+                    <Link href="/stats" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
+                      📊 {t("Stats", "Statistika")}
+                    </Link>
+                    <Link href="/friends" onClick={() => setMenuOpen(false)} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
+                      <span>👥 {t("Friends", "Prijatelji")}</span>
+                      {pendingReqs > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+                          {pendingReqs}
+                        </span>
+                      )}
+                    </Link>
+                    <Link href="/leaderboard" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
+                      🏆 {t("Leaderboard", "Rang lista")}
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="mt-1 block w-full rounded-lg border-t border-border px-3 py-2 text-left text-sm text-muted hover:bg-surface-2"
+                    >
+                      🚪 {t("Log out", "Odjava")}
+                    </button>
                   </div>
-                  <Link href="/stats" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
-                    📊 {t("Stats", "Statistika")}
-                  </Link>
-                  <Link href="/friends" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
-                    👥 {t("Friends", "Prijatelji")}
-                  </Link>
-                  <Link href="/leaderboard" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
-                    🏆 {t("Leaderboard", "Rang lista")}
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="mt-1 block w-full rounded-lg border-t border-border px-3 py-2 text-left text-sm text-muted hover:bg-surface-2"
-                  >
-                    🚪 {t("Log out", "Odjava")}
-                  </button>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>

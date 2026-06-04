@@ -4,9 +4,9 @@ import { getUserId } from "@/lib/auth";
 import { friendRequestSchema } from "@/lib/validation";
 import { getUserProgress } from "@/lib/streak";
 
-// A friendly display name from a user record.
-function displayName(u: { name: string | null; email: string }): string {
-  return u.name?.trim() || u.email.split("@")[0];
+// A friendly display name from a user record (prefer username).
+function displayName(u: { username?: string | null; name: string | null; email: string }): string {
+  return u.username?.trim() || u.name?.trim() || u.email.split("@")[0];
 }
 
 // GET /api/friends?today=YYYY-MM-DD
@@ -26,8 +26,8 @@ export async function GET(req: Request) {
       OR: [{ requesterId: userId }, { addresseeId: userId }],
     },
     include: {
-      requester: { select: { id: true, name: true, email: true } },
-      addressee: { select: { id: true, name: true, email: true } },
+      requester: { select: { id: true, username: true, name: true, email: true } },
+      addressee: { select: { id: true, username: true, name: true, email: true } },
     },
   });
   const friendUsers = friendships.map((f) =>
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
   // Me + friends, with each one's streak + today's progress.
   const me = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true },
+    select: { id: true, username: true, name: true, email: true },
   });
   if (!me) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -62,7 +62,7 @@ export async function GET(req: Request) {
   // Incoming pending requests (people who want to add me).
   const incoming = await prisma.friendship.findMany({
     where: { addresseeId: userId, status: "pending" },
-    include: { requester: { select: { id: true, name: true, email: true } } },
+    include: { requester: { select: { id: true, username: true, name: true, email: true } } },
   });
 
   return NextResponse.json({
@@ -87,18 +87,19 @@ export async function POST(req: Request) {
   const parsed = friendRequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Invalid email" },
+      { error: parsed.error.issues[0]?.message ?? "Invalid input" },
       { status: 400 },
     );
   }
 
-  const target = await prisma.user.findUnique({
-    where: { email: parsed.data.email },
+  // Find the target by username or email.
+  const to = parsed.data.to;
+  const target = await prisma.user.findFirst({
+    where: { OR: [{ username: to }, { email: to }] },
     select: { id: true },
   });
-  // Generic-ish: don't hard-confirm account existence, but we do need a target.
   if (!target) {
-    return NextResponse.json({ error: "No user with that email" }, { status: 404 });
+    return NextResponse.json({ error: "No user with that username/email" }, { status: 404 });
   }
   if (target.id === userId) {
     return NextResponse.json({ error: "You can't add yourself" }, { status: 400 });

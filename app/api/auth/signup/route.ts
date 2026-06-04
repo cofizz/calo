@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { credentialsSchema } from "@/lib/validation";
+import { signupSchema } from "@/lib/validation";
 import { createSession, hashPassword } from "@/lib/auth";
 
 export async function POST(req: Request) {
@@ -13,32 +13,34 @@ export async function POST(req: Request) {
   }
 
   // Validate + normalise input. Anything malformed is rejected here.
-  const parsed = credentialsSchema.safeParse(body);
+  const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? "Invalid input" },
       { status: 400 },
     );
   }
-  const { email, password } = parsed.data;
+  const { email, username, password } = parsed.data;
 
   const passwordHash = await hashPassword(password);
 
   try {
     const user = await prisma.user.create({
-      data: { email, passwordHash },
+      data: { email, username, passwordHash },
       select: { id: true },
     });
     await createSession(user.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    // Unique-constraint violation = email already registered.
+    // Unique-constraint violation = email or username already taken.
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2002"
     ) {
+      const target = (err.meta?.target as string[] | undefined)?.join(",") ?? "";
+      const field = target.includes("username") ? "username" : "email";
       return NextResponse.json(
-        { error: "An account with that email already exists" },
+        { error: `That ${field} is already taken` },
         { status: 409 },
       );
     }
