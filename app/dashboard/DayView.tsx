@@ -55,7 +55,7 @@ export default function DayView({
   email,
   initialGoal,
   initialMacros,
-  profile,
+  profile: initialProfile,
 }: {
   email: string;
   initialGoal: number;
@@ -63,6 +63,9 @@ export default function DayView({
   profile: Profile;
 }) {
   const router = useRouter();
+  // Profile is stateful so the calculator reflects the latest saved values
+  // immediately (no refresh needed).
+  const [profile, setProfile] = useState<Profile>(initialProfile);
   const [day, setDay] = useState(todayString());
   const [entries, setEntries] = useState<Entry[]>([]);
   const [savedFoods, setSavedFoods] = useState<SavedFood[]>([]);
@@ -510,9 +513,10 @@ export default function DayView({
       {showCalc && (
         <GoalCalculator
           initial={profile}
-          onApplied={(g, m) => {
+          onApplied={(g, m, p) => {
             setGoal(g);
             if (m) setMacroGoals(m);
+            if (p) setProfile(p);
             setShowCalc(false);
           }}
           onClose={() => setShowCalc(false)}

@@ -27,6 +27,7 @@ export default function GoalCalculator({
   onApplied: (
     newGoal: number,
     macros?: { protein: number; carbs: number; fat: number },
+    profile?: Profile,
   ) => void;
   onClose: () => void;
 }) {
@@ -41,7 +42,7 @@ export default function GoalCalculator({
 
   async function calculate() {
     setError(null);
-    const payload = {
+    const payload: Profile = {
       sex,
       age: Number(age),
       heightCm: Number(height),
@@ -68,6 +69,7 @@ export default function GoalCalculator({
         typeof data.protein === "number"
           ? { protein: data.protein, carbs: data.carbs, fat: data.fat }
           : undefined,
+        payload, // so the dashboard remembers these inputs for next time
       );
     } catch {
       setError("Network error");
