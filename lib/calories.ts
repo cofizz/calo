@@ -52,11 +52,13 @@ export function calcBmr(input: Pick<CalorieInput, "sex" | "age" | "heightCm" | "
   return input.sex === "male" ? base + 5 : base - 161;
 }
 
-// Default macro split (% of calories) per plan. Protein/carbs = 4 kcal/g, fat = 9.
-const MACRO_SPLIT: Record<GoalType, { p: number; c: number; f: number }> = {
-  cut: { p: 0.4, c: 0.3, f: 0.3 }, // high protein to keep muscle in a deficit
-  maintain: { p: 0.3, c: 0.4, f: 0.3 },
-  bulk: { p: 0.3, c: 0.45, f: 0.25 },
+// Protein per kg of bodyweight + fat as a % of calories, per plan. Bodyweight-
+// based protein is how it's actually done — a flat % of calories overshoots
+// badly at higher calorie targets (e.g. 250 g protein for an 88 kg cut 🙃).
+const MACRO_RULES: Record<GoalType, { proteinPerKg: number; fatPct: number }> = {
+  cut: { proteinPerKg: 2.2, fatPct: 0.25 }, // higher protein protects muscle in a deficit
+  maintain: { proteinPerKg: 1.8, fatPct: 0.28 },
+  bulk: { proteinPerKg: 1.9, fatPct: 0.25 },
 };
 
 export type Macros = { protein: number; carbs: number; fat: number };
@@ -75,15 +77,24 @@ export function metGoal(
   return r >= 0.9 && r <= 1.1; // maintain: near the target
 }
 
-// Derive daily protein/carbs/fat goals (grams) from the calorie goal + plan.
-export function defaultMacros(calorieGoal: number, goalType: GoalType): Macros {
-  const s = MACRO_SPLIT[goalType] ?? MACRO_SPLIT.maintain;
+// Derive daily protein/carbs/fat goals (grams) from the calorie goal, plan and
+// (when known) bodyweight. Carbs fill whatever calories are left over.
+export function defaultMacros(
+  calorieGoal: number,
+  goalType: GoalType,
+  weightKg?: number | null,
+): Macros {
+  const r = MACRO_RULES[goalType] ?? MACRO_RULES.maintain;
   const round5 = (n: number) => Math.round(n / 5) * 5;
-  return {
-    protein: round5((calorieGoal * s.p) / 4),
-    carbs: round5((calorieGoal * s.c) / 4),
-    fat: round5((calorieGoal * s.f) / 9),
-  };
+
+  // Protein from bodyweight; fall back to ~30% of calories if weight unknown.
+  const protein = weightKg ? weightKg * r.proteinPerKg : (calorieGoal * 0.3) / 4;
+  // Fat as a share of calories, with a hormone-friendly floor when we have weight.
+  const fat = Math.max((calorieGoal * r.fatPct) / 9, weightKg ? weightKg * 0.7 : 0);
+  // Carbs = remaining calories.
+  const carbs = Math.max((calorieGoal - protein * 4 - fat * 9) / 4, 0);
+
+  return { protein: round5(protein), carbs: round5(carbs), fat: round5(fat) };
 }
 
 export function calcGoal(input: CalorieInput): {

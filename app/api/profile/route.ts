@@ -28,7 +28,7 @@ export async function PATCH(req: Request) {
   }
 
   const { goal, bmr, tdee } = calcGoal(parsed.data);
-  const macros = defaultMacros(goal, parsed.data.goalType);
+  const macros = defaultMacros(goal, parsed.data.goalType, parsed.data.weightKg);
 
   await prisma.user.update({
     where: { id: userId },

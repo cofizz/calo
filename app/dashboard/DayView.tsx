@@ -88,6 +88,7 @@ export default function DayView({
   const [editingGoal, setEditingGoal] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const loadEntries = useCallback(
     async (d: string) => {
@@ -291,34 +292,40 @@ export default function DayView({
             <span className="text-xl">🍃</span>
             <span className="font-semibold">Calo</span>
           </div>
-          <div className="flex items-center gap-3">
-            <LangToggle />
-            <Link
-              href="/stats"
-              className="text-xs font-medium text-accent transition-colors hover:opacity-80"
-            >
-              📊 {t("Stats", "Statistika")}
-            </Link>
-            <Link
-              href="/friends"
-              className="text-xs font-medium text-accent transition-colors hover:opacity-80"
-            >
-              👥 {t("Friends", "Prijatelji")}
-            </Link>
-            <Link
-              href="/leaderboard"
-              className="text-xs font-medium text-accent transition-colors hover:opacity-80"
-              title={t("Leaderboard", "Rang lista")}
-            >
-              🏆
-            </Link>
+          {/* Burger menu */}
+          <div className="relative">
             <button
-              onClick={logout}
-              className="text-xs text-muted transition-colors hover:text-foreground"
-              title={email}
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label="Menu"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg text-foreground"
             >
-              {t("Log out", "Odjava")}
+              {menuOpen ? "✕" : "☰"}
             </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-11 z-30 w-48 rounded-2xl border border-border bg-surface p-2 shadow-2xl shadow-black/50">
+                  <div className="mb-2 flex justify-center border-b border-border pb-2">
+                    <LangToggle />
+                  </div>
+                  <Link href="/stats" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
+                    📊 {t("Stats", "Statistika")}
+                  </Link>
+                  <Link href="/friends" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
+                    👥 {t("Friends", "Prijatelji")}
+                  </Link>
+                  <Link href="/leaderboard" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
+                    🏆 {t("Leaderboard", "Rang lista")}
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="mt-1 block w-full rounded-lg border-t border-border px-3 py-2 text-left text-sm text-muted hover:bg-surface-2"
+                  >
+                    🚪 {t("Log out", "Odjava")}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>

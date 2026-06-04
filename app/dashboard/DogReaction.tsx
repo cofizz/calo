@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useI18n } from "../i18n-context";
 
 // The dog hangs out next to the calorie ring and reacts to the day — judged by
 // the user's PLAN (cut / bulk / maintain). On a cut, eating under goal is great;
@@ -14,17 +15,138 @@ type Plan = "cut" | "bulk" | "maintain";
 
 export type DogReactionData = {
   tier: Tier;
+  plan: Plan;
   emoji: string;
   title: string;
   tone: string; // tailwind text color class
   lines: string[]; // goofy one-liners (one picked at random)
 };
 
+// Serbian text (title + goofy lines) per plan/tier — overlays the English data.
+const TEXT_SR: Record<Plan, Record<Tier, { title: string; lines: string[] }>> = {
+  cut: {
+    "under-goal": { title: "Duboki deficit", lines: [
+      "Pojeo si jedan list salate i rekao gotovo.",
+      "Stomak ti je prijavio nestanak osobe.",
+      "Grozd ima više sadržaja od ovoga.",
+      "Jedeš li ti uopšte ili samo postojiš?",
+      "Pas ti nudi svoju hranu, bre.",
+      "Ovo nije dijeta, ovo je čarobni nestanak.",
+      "Vazduh i inat — doručak šampiona.",
+    ] },
+    "near-goal": { title: "Čisto skidanje", lines: [
+      "Disciplina na nivou, ko je dobar dečko?",
+      "Frižider te se plaši.",
+      "Trbušnjaci se učitavaju… 73%.",
+      "Pogledao si krofnu i otišao. Heroj.",
+      "Deficit osiguran, faca netaknuta.",
+      "Lean mašina, bip bup.",
+    ] },
+    "hit-goal": { title: "Tačno na cilju", lines: [
+      "Majstorski. Bogovi deficita su zadovoljni.",
+      "Snajperski precizno. Pas ti salutira. 🫡",
+      "Tačno koliko treba. Sumnjivo savršeno.",
+      "10/10 bez primedbi. Rep maše ludo.",
+      "Zlatna sredina. To je to. *pas zuri dramatično*",
+    ] },
+    "over-limit": { title: "Grickalice su se desile", lines: [
+      "Neko je našao frižider. Pas je sve video. 👀",
+      "Skidanje je otišlo na pauzu za kafu.",
+      "Bili smo tako blizu. Tako tako blizu.",
+      "Pojavila se grickalica, bio si nemoćan.",
+      "Pas nije ljut, samo razočaran.",
+    ] },
+    "way-over": { title: "O danas ne pričamo", lines: [
+      "To nije bilo skidanje, to je bila gozba. *pojačano osuđivanje*",
+      "Deficit je trajno napustio grupu.",
+      "Pojeo si i deficit i višak i ceo meni deserta.",
+      "Dijeta? Pas nikad čuo za nju danas.",
+      "Speedrun kroz celu kuhinju.",
+      "Sutra se pravimo da se ovo nije desilo. 🤝",
+    ] },
+  },
+  bulk: {
+    "under-goal": { title: "To je mrvica", lines: [
+      "Gains plaču. JEDI. 😭",
+      "To je bulk? Veverica je pojela više.",
+      "Pirinač. Odmah. Idi.",
+      "Mišići ne rastu na vazduhu, brate.",
+      "Gains su otišli u drugu teretanu danas.",
+      "Nahrani zver ili će zver tebe.",
+    ] },
+    "near-goal": { title: "Treba još goriva", lines: [
+      "Na pola puta do zveri. Više hrane, manje priče.",
+      "Gains na čekanju… ubaci još ugljenih hidrata.",
+      "Skoro si tu, još jedan tanjir.",
+      "Višak je stidljiv. Namami ga picom.",
+      "Lopataj dalje, gains te gledaju.",
+    ] },
+    "hit-goal": { title: "Višak osiguran", lines: [
+      "GROWTH MINDSET (bukvalno). Gains stižu. 💪",
+      "Višak zaključan. Mišići kažu vau, hvala.",
+      "Viljuška: legendarna. Gains: neizbežni.",
+      "Nahranio si zver i zver je ODUŠEVLJENA.",
+      "Bulkuj ko da niko ne gleda. (pas gleda.)",
+    ] },
+    "over-limit": { title: "Apsolutna zverka", lines: [
+      "Ponašanje zverke. Drži (uglavnom) čisto.",
+      "Višak naslagan više od tvojih standarda.",
+      "Bulk sezona: totalno odlepljeno. Respekt.",
+      "Prljavi bulk detektovan. Pas odobrava haos.",
+      "Ne jedeš, uznosiš se.",
+    ] },
+    "way-over": { title: "To je švedski sto", lines: [
+      "Nije bulk, ceo švedski sto. Blago zabrinjavajuće.",
+      "Čak i za bulk… to je MNOGO hrane, kralju.",
+      "Pas nikad nije video toliku posvećenost jelu.",
+      "Nisi bulkovao, postao si lanac ishrane.",
+      "Polako, švedski sto hoće titulu nazad.",
+    ] },
+  },
+  maintain: {
+    "under-goal": { title: "Na rezervi", lines: [
+      "Preživljavaš na lepoti i tri badema. Jedi.",
+      "To je grickalica, ne dan, druže.",
+      "Pas ti donosi sendvič. Čekaj.",
+      "Prazan rezervoar, jaka faca. Dopuni.",
+      "Opet si zaboravio da jedeš, je l' da. 🙃",
+    ] },
+    "near-goal": { title: "Krstariš", lines: [
+      "Još malo pa savršeno izbalansirano.",
+      "Skoro savršeno. Pas strpljivo maše.",
+      "Mirna plovidba, blago gladan.",
+      "Jedna grickalica do harmonije.",
+      "Režim održavanja: 90% učitano…",
+    ] },
+    "hit-goal": { title: "Savršeno izbalansirano", lines: [
+      "Kako i treba da bude. 🐾",
+      "Održavanje savladano. Zen pas je ušao u čet.",
+      "Tačno na pari. *sporo odobravajuće mahanje*",
+      "Nijedna kalorija van mesta. Ikonski.",
+      "Izbalansiran ko dobar dečko na ogradi.",
+    ] },
+    "over-limit": { title: "Mrvicu preko", lines: [
+      "Pas je primetio ali neće nikom reći.",
+      "Ušunjala se poslastica. Praštamo. Uglavnom.",
+      "Malo ljuće na kalorijama danas.",
+      "Živimo malo, a? 😏",
+      "Održavanje, lagano začinjeno haosom.",
+    ] },
+    "way-over": { title: "Održavanje? Ne poznajem je", lines: [
+      "Održavanje je napustilo zgradu. 🚪",
+      "Održao si… celu gozbu.",
+      "Eskaliralo je ukusno.",
+      "Pas je razrogačen i blago impresioniran.",
+      "Ravnoteža? U OVOJ ekonomiji? Ne.",
+    ] },
+  },
+};
+
 const ACCENT = "text-accent";
 const DANGER = "text-danger";
 const MUTED = "text-muted";
 
-const REACTIONS: Record<Plan, Record<Tier, Omit<DogReactionData, "tier">>> = {
+const REACTIONS: Record<Plan, Record<Tier, Omit<DogReactionData, "tier" | "plan">>> = {
   cut: {
     "under-goal": { emoji: "🍃", title: "Deep deficit", tone: MUTED, lines: [
       "Bro ate a single leaf and called it a day.",
@@ -174,12 +296,13 @@ export function getDogReaction(
   const plan: Plan =
     goalType === "cut" || goalType === "bulk" ? goalType : "maintain";
   const tier = tierFor(calories / goal);
-  return { tier, ...REACTIONS[plan][tier] };
+  return { tier, plan, ...REACTIONS[plan][tier] };
 }
 
 type Groups = Record<string, string[]>;
 
 export default function DogReaction({ reaction }: { reaction: DogReactionData | null }) {
+  const { lang } = useI18n();
   const [groups, setGroups] = useState<Groups>({});
   const [imgFailed, setImgFailed] = useState(false);
 
@@ -192,6 +315,14 @@ export default function DogReaction({ reaction }: { reaction: DogReactionData | 
 
   const tier = reaction?.tier ?? null;
 
+  // Title + lines in the current language (Serbian overlay, else English).
+  const text =
+    reaction && lang === "sr"
+      ? TEXT_SR[reaction.plan][reaction.tier]
+      : reaction
+        ? { title: reaction.title, lines: reaction.lines }
+        : null;
+
   // Pick a random photo for the current tier (re-picks when the tier changes).
   const src = useMemo(() => {
     if (!tier) return null;
@@ -200,16 +331,16 @@ export default function DogReaction({ reaction }: { reaction: DogReactionData | 
     return `/dog/${list[Math.floor(Math.random() * list.length)]}`;
   }, [tier, groups]);
 
-  // Pick a random goofy line for the current tier.
+  // Pick a random goofy line for the current tier + language.
   const line = useMemo(() => {
-    if (!reaction) return "";
-    return reaction.lines[Math.floor(Math.random() * reaction.lines.length)];
+    if (!text) return "";
+    return text.lines[Math.floor(Math.random() * text.lines.length)];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tier]);
+  }, [tier, lang]);
 
   useEffect(() => setImgFailed(false), [src]);
 
-  if (!reaction) return null;
+  if (!reaction || !text) return null;
 
   return (
     <div className="mt-5 flex flex-col items-center text-center">
@@ -224,7 +355,7 @@ export default function DogReaction({ reaction }: { reaction: DogReactionData | 
       ) : (
         <span className="text-7xl">{reaction.emoji}</span>
       )}
-      <p className={`mt-3 text-base font-bold leading-tight ${reaction.tone}`}>{reaction.title}</p>
+      <p className={`mt-3 text-base font-bold leading-tight ${reaction.tone}`}>{text.title}</p>
       <p className="mt-1 text-sm leading-snug text-muted">{line}</p>
     </div>
   );

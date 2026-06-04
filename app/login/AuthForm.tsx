@@ -42,10 +42,20 @@ export default function AuthForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <div className="mb-3 flex justify-end">
-        <LangToggle />
+    <>
+      <div className="mb-8 text-center">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/15 text-3xl">
+          🍃
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">Calo</h1>
+        <p className="mt-1 text-sm text-muted">
+          {t("Your private food & calorie diary", "Tvoj privatni dnevnik hrane i kalorija")}
+        </p>
       </div>
+      <div className="rounded-2xl border border-border bg-surface p-5">
+        <div className="mb-3 flex justify-end">
+          <LangToggle />
+        </div>
       {/* Tab switch between Log in and Sign up */}
       <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1 text-sm font-medium">
         {(["login", "signup"] as Mode[]).map((m) => (
@@ -113,6 +123,7 @@ export default function AuthForm() {
               : t("Create account", "Napravi nalog")}
         </button>
       </form>
-    </div>
+      </div>
+    </>
   );
 }

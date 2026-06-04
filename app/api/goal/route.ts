@@ -29,10 +29,10 @@ export async function PATCH(req: Request) {
   // Re-derive macro goals from the new calorie goal + the user's plan.
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { goalType: true },
+    select: { goalType: true, weightKg: true },
   });
   const plan = (user?.goalType as GoalType) ?? "maintain";
-  const macros = defaultMacros(parsed.data.dailyGoal, plan);
+  const macros = defaultMacros(parsed.data.dailyGoal, plan, user?.weightKg);
 
   await prisma.user.update({
     where: { id: userId },
