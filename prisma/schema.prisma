@@ -1,0 +1,138 @@
+// Prisma schema for the calorie tracker.
+// SQLite for local dev — swap `provider` to "postgresql" when you deploy.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection (used by the app at runtime on serverless).
+  url       = env("DATABASE_URL")
+  // Direct connection (used by Prisma for migrations).
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  // Always store the bcrypt HASH, never the plain password.
+  passwordHash String
+  // Daily calorie goal (kcal). Friendly default.
+  dailyGoal    Int         @default(2000)
+  // Daily macro goals in grams (auto-derived from calories + plan, editable).
+  proteinGoal  Int         @default(150)
+  carbsGoal    Int         @default(200)
+  fatGoal      Int         @default(65)
+
+  // Optional profile used by the goal calculator (Mifflin-St Jeor).
+  sex          String? // "male" | "female"
+  age          Int?
+  heightCm     Float?
+  weightKg     Float?
+  activity     String? // sedentary | light | moderate | active | very_active
+  goalType     String? // cut | maintain | bulk
+
+  // Optional display name shown to friends (falls back to email prefix).
+  name         String?
+
+  createdAt    DateTime    @default(now())
+  entries      FoodEntry[]
+  savedFoods   SavedFood[]
+  meals        Meal[]
+  stepLogs     StepLog[]
+  friendsSent     Friendship[] @relation("requester")
+  friendsReceived Friendship[] @relation("addressee")
+}
+
+// Steps walked on a given day (one row per user per day).
+model StepLog {
+  id     String @id @default(cuid())
+  day    String // YYYY-MM-DD (user's local date)
+  steps  Int    @default(0)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([userId, day])
+  @@index([userId])
+  @@index([day])
+}
+
+// A friendship / friend request between two users.
+model Friendship {
+  id          String   @id @default(cuid())
+  status      String   @default("pending") // pending | accepted
+  createdAt   DateTime @default(now())
+
+  requester   User   @relation("requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterId String
+  addressee   User   @relation("addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  addresseeId String
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+}
+
+// A reusable "meal" / recipe: a named bundle of food items the user can add to
+// any day in one tap (e.g. "My breakfast" = oats + banana + whey).
+model Meal {
+  id        String     @id @default(cuid())
+  name      String
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  items     MealItem[]
+
+  @@index([userId])
+}
+
+model MealItem {
+  id       String @id @default(cuid())
+  name     String
+  calories Int
+  protein  Float  @default(0)
+  carbs    Float  @default(0)
+  fat      Float  @default(0)
+  meal     String @default("snack") // which slot this item goes to when logged
+  parent   Meal   @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  mealId   String
+
+  @@index([mealId])
+}
+
+// A reusable food the user has saved to their personal library, so they can
+// re-add it with one tap instead of re-typing the macros.
+model SavedFood {
+  id        String   @id @default(cuid())
+  name      String
+  calories  Int
+  protein   Float    @default(0)
+  carbs     Float    @default(0)
+  fat       Float    @default(0)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId])
+}
+
+model FoodEntry {
+  id        String   @id @default(cuid())
+  name      String
+  calories  Int
+  protein   Float    @default(0)
+  carbs     Float    @default(0)
+  fat       Float    @default(0)
+  // Which meal: breakfast | lunch | dinner | snack
+  meal      String   @default("snack")
+  // The calendar day this entry belongs to, stored as YYYY-MM-DD.
+  day       String
+  createdAt DateTime @default(now())
+
+  // Each entry belongs to exactly one user; deleting a user removes their entries.
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId, day])
+}
