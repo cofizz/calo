@@ -305,6 +305,13 @@ export default function DayView({
             >
               👥 {t("Friends", "Prijatelji")}
             </Link>
+            <Link
+              href="/leaderboard"
+              className="text-xs font-medium text-accent transition-colors hover:opacity-80"
+              title={t("Leaderboard", "Rang lista")}
+            >
+              🏆
+            </Link>
             <button
               onClick={logout}
               className="text-xs text-muted transition-colors hover:text-foreground"

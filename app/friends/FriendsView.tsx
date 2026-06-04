@@ -16,23 +16,15 @@ type LeaderRow = {
   todayMet: boolean;
 };
 type Request = { id: string; name: string };
-type StepRow = { rank: number; id: string; name: string; steps: number; isMe: boolean };
 
 export default function FriendsView() {
   const { t } = useI18n();
-  const [tab, setTab] = useState<"streaks" | "steps">("streaks");
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
   const [requests, setRequests] = useState<Request[]>([]);
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-
-  // Global steps leaderboard.
-  const [stepsPeriod, setStepsPeriod] = useState<"today" | "week">("today");
-  const [stepsBoard, setStepsBoard] = useState<StepRow[]>([]);
-  const [stepsMe, setStepsMe] = useState<StepRow | null>(null);
-  const [stepsLoading, setStepsLoading] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/friends?today=${todayString()}`, { cache: "no-store" });
@@ -44,27 +36,9 @@ export default function FriendsView() {
     setLoading(false);
   }, []);
 
-  const loadSteps = useCallback(async () => {
-    setStepsLoading(true);
-    const res = await fetch(
-      `/api/leaderboard/steps?period=${stepsPeriod}&today=${todayString()}`,
-      { cache: "no-store" },
-    );
-    if (res.ok) {
-      const d = await res.json();
-      setStepsBoard(d.leaderboard);
-      setStepsMe(d.me);
-    }
-    setStepsLoading(false);
-  }, [stepsPeriod]);
-
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    if (tab === "steps") loadSteps();
-  }, [tab, loadSteps]);
 
   async function addFriend(e: React.FormEvent) {
     e.preventDefault();
@@ -121,40 +95,6 @@ export default function FriendsView() {
       </header>
 
       <main className="mx-auto w-full max-w-md flex-1 px-4 pb-28 pt-4">
-        {/* Tabs */}
-        <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1 text-sm font-medium">
-          <button
-            onClick={() => setTab("streaks")}
-            className={`rounded-lg py-2 transition-colors ${tab === "streaks" ? "bg-accent text-black" : "text-muted"}`}
-          >
-            🔥 {t("Streaks", "Nizovi")}
-          </button>
-          <button
-            onClick={() => setTab("steps")}
-            className={`rounded-lg py-2 transition-colors ${tab === "steps" ? "bg-accent text-black" : "text-muted"}`}
-          >
-            👟 {t("Steps (global)", "Koraci (svi)")}
-          </button>
-        </div>
-
-        {tab === "steps" ? (
-          <StepsBoard
-            period={stepsPeriod}
-            setPeriod={setStepsPeriod}
-            board={stepsBoard}
-            me={stepsMe}
-            loading={stepsLoading}
-          />
-        ) : (
-          <StreaksTab />
-        )}
-      </main>
-    </div>
-  );
-
-  function StreaksTab() {
-    return (
-      <>
         {/* Add friend */}
         <form onSubmit={addFriend} className="mb-5 rounded-2xl border border-border bg-surface p-4">
           <p className="mb-2 text-sm font-medium">{t("Add a friend", "Dodaj prijatelja")}</p>
@@ -246,82 +186,7 @@ export default function FriendsView() {
             ))}
           </ul>
         )}
-      </>
-    );
-  }
-}
-
-function StepsBoard({
-  period,
-  setPeriod,
-  board,
-  me,
-  loading,
-}: {
-  period: "today" | "week";
-  setPeriod: (p: "today" | "week") => void;
-  board: StepRow[];
-  me: StepRow | null;
-  loading: boolean;
-}) {
-  const { t } = useI18n();
-  const medal = (rank: number) =>
-    rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}.`;
-  const meInTop = me && board.some((r) => r.isMe);
-
-  return (
-    <>
-      {/* Period toggle */}
-      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1 text-xs font-medium">
-        {(["today", "week"] as const).map((p) => (
-          <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            className={`rounded-lg py-1.5 transition-colors ${period === p ? "bg-accent text-black" : "text-muted"}`}
-          >
-            {p === "today" ? t("Today", "Danas") : t("This week", "Ove nedelje")}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <p className="py-8 text-center text-sm text-muted">{t("Loading…", "Učitavanje…")}</p>
-      ) : board.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface p-6 text-center">
-          <p className="text-sm text-muted">
-            {t("No steps logged yet anywhere. Be the first — start walk mode! 🚶", "Još niko nije uneo korake. Budi prvi — pokreni brojač! 🚶")}
-          </p>
-        </div>
-      ) : (
-        <>
-          <ul className="space-y-2">
-            {board.map((row) => (
-              <li
-                key={row.id}
-                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
-                  row.isMe ? "border-accent/40 bg-accent/10" : "border-border bg-surface"
-                }`}
-              >
-                <span className="w-7 text-center text-sm">{medal(row.rank)}</span>
-                <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {row.name} {row.isMe && <span className="text-xs text-muted">({t("you","ti")})</span>}
-                </p>
-                <span className="text-sm font-bold text-accent">{row.steps.toLocaleString()}</span>
-              </li>
-            ))}
-          </ul>
-          {/* Show my rank if I'm outside the top list */}
-          {me && !meInTop && (
-            <div className="mt-2 flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3">
-              <span className="w-7 text-center text-sm">{me.rank}.</span>
-              <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                {me.name} <span className="text-xs text-muted">({t("you","ti")})</span>
-              </p>
-              <span className="text-sm font-bold text-accent">{me.steps.toLocaleString()}</span>
-            </div>
-          )}
-        </>
-      )}
-    </>
+      </main>
+    </div>
   );
 }
