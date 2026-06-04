@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { addDays, friendlyDay, todayString } from "@/lib/date";
+import { useI18n } from "../i18n-context";
+import LangToggle from "../LangToggle";
 import CalorieRing from "./CalorieRing";
 import MacroRing from "./MacroRing";
 import StepCounter from "./StepCounter";
@@ -63,6 +65,14 @@ export default function DayView({
   profile: Profile;
 }) {
   const router = useRouter();
+  const { t, lang } = useI18n();
+  const mealLabel = (key: string) =>
+    ({
+      breakfast: t("Breakfast", "Doručak"),
+      lunch: t("Lunch", "Ručak"),
+      dinner: t("Dinner", "Večera"),
+      snack: t("Snacks", "Užina"),
+    })[key] ?? key;
   // Profile is stateful so the calculator reflects the latest saved values
   // immediately (no refresh needed).
   const [profile, setProfile] = useState<Profile>(initialProfile);
@@ -282,24 +292,25 @@ export default function DayView({
             <span className="font-semibold">Calo</span>
           </div>
           <div className="flex items-center gap-3">
+            <LangToggle />
             <Link
               href="/stats"
               className="text-xs font-medium text-accent transition-colors hover:opacity-80"
             >
-              📊 Stats
+              📊 {t("Stats", "Statistika")}
             </Link>
             <Link
               href="/friends"
               className="text-xs font-medium text-accent transition-colors hover:opacity-80"
             >
-              👥 Friends
+              👥 {t("Friends", "Prijatelji")}
             </Link>
             <button
               onClick={logout}
               className="text-xs text-muted transition-colors hover:text-foreground"
               title={email}
             >
-              Log out
+              {t("Log out", "Odjava")}
             </button>
           </div>
         </div>
@@ -316,7 +327,7 @@ export default function DayView({
             ‹
           </button>
           <button onClick={() => setDay(todayString())} className="text-sm font-medium">
-            {friendlyDay(day)}
+            {friendlyDay(day, lang)}
           </button>
           <button
             onClick={() => setDay((d) => addDays(d, 1))}
@@ -331,14 +342,14 @@ export default function DayView({
         <div className="mb-4 flex justify-center">
           {streak && streak.current > 0 ? (
             <div className="flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-sm">
-              <span className="font-semibold text-orange-400">🔥 {streak.current}-day streak</span>
+              <span className="font-semibold text-orange-400">🔥 {streak.current}{t("-day streak", "-dnevni niz")}</span>
               {streak.best > streak.current && (
-                <span className="text-xs text-muted">best {streak.best}</span>
+                <span className="text-xs text-muted">{t("best", "najbolji")} {streak.best}</span>
               )}
             </div>
           ) : (
             <div className="rounded-full bg-surface px-4 py-1.5 text-xs text-muted">
-              🔥 Hit today&apos;s goal to start a streak
+              🔥 {t("Hit today's goal to start a streak", "Ispuni današnji cilj da započneš niz")}
             </div>
           )}
         </div>
@@ -348,9 +359,9 @@ export default function DayView({
           <CalorieRing consumed={totals.calories} goal={goal} />
 
           <div className="mt-5 flex items-start justify-around">
-            <MacroRing label="Protein" consumed={totals.protein} goal={macroGoals.protein} color="#60a5fa" />
-            <MacroRing label="Carbs" consumed={totals.carbs} goal={macroGoals.carbs} color="#fbbf24" />
-            <MacroRing label="Fat" consumed={totals.fat} goal={macroGoals.fat} color="#f472b6" />
+            <MacroRing label={t("Protein", "Proteini")} consumed={totals.protein} goal={macroGoals.protein} color="#60a5fa" />
+            <MacroRing label={t("Carbs", "Ugljeni h.")} consumed={totals.carbs} goal={macroGoals.carbs} color="#fbbf24" />
+            <MacroRing label={t("Fat", "Masti")} consumed={totals.fat} goal={macroGoals.fat} color="#f472b6" />
           </div>
 
           {/* Sister's dog reacts below the macros (appears once you log food) */}
@@ -365,19 +376,19 @@ export default function DayView({
               />
             ) : (
               <>
-                <span>Daily goal: {goal.toLocaleString()} kcal</span>
+                <span>{t("Daily goal", "Dnevni cilj")}: {goal.toLocaleString()} kcal</span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowCalc(true)}
                     className="rounded-full bg-accent/15 px-3 py-1 font-medium text-accent"
                   >
-                    🧮 Calculate
+                    🧮 {t("Calculate", "Izračunaj")}
                   </button>
                   <button
                     onClick={() => setEditingGoal(true)}
                     className="rounded-full bg-surface-2 px-3 py-1"
                   >
-                    Edit manually
+                    {t("Edit manually", "Ručno")}
                   </button>
                 </div>
               </>
@@ -391,7 +402,7 @@ export default function DayView({
         {/* Saved meals quick-add */}
         {meals.length > 0 && (
           <div className="mb-4">
-            <p className="mb-2 px-1 text-xs font-medium text-muted">🍱 Your meals</p>
+            <p className="mb-2 px-1 text-xs font-medium text-muted">🍱 {t("Your meals", "Tvoji obroci")}</p>
             <div className="flex flex-wrap gap-2">
               {meals.map((m) => {
                 const cals = m.items.reduce((s, it) => s + it.calories, 0);
@@ -402,7 +413,7 @@ export default function DayView({
                   >
                     <button onClick={() => logMeal(m.id)} className="font-medium text-accent">
                       {m.name}{" "}
-                      <span className="text-muted">· {cals} · {m.items.length} items</span>
+                      <span className="text-muted">· {cals} · {m.items.length} {t("items", "stavki")}</span>
                     </button>
                     <button
                       onClick={() => deleteMeal(m.id)}
@@ -421,7 +432,7 @@ export default function DayView({
         {/* Saved foods quick-add */}
         {savedFoods.length > 0 && (
           <div className="mb-4">
-            <p className="mb-2 px-1 text-xs font-medium text-muted">Your foods</p>
+            <p className="mb-2 px-1 text-xs font-medium text-muted">{t("Your foods", "Tvoja hrana")}</p>
             <div className="flex flex-wrap gap-2">
               {savedFoods.map((f) => (
                 <span
@@ -451,10 +462,10 @@ export default function DayView({
         {/* Entries grouped by meal */}
         <div className="mt-5 space-y-4">
           {loading ? (
-            <p className="py-8 text-center text-sm text-muted">Loading…</p>
+            <p className="py-8 text-center text-sm text-muted">{t("Loading…", "Učitavanje…")}</p>
           ) : entries.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted">
-              Nothing logged yet. Add your first food above. 🥗
+              {t("Nothing logged yet. Add your first food above. 🥗", "Još ništa nije uneto. Dodaj prvu hranu gore. 🥗")}
             </p>
           ) : (
             MEALS.map((meal) => {
@@ -465,14 +476,14 @@ export default function DayView({
                 <div key={meal.key}>
                   <div className="mb-1 flex items-center justify-between px-1">
                     <span className="text-sm font-medium text-muted">
-                      {meal.icon} {meal.label}
+                      {meal.icon} {mealLabel(meal.key)}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => openSaveMeal(meal.label, items)}
+                        onClick={() => openSaveMeal(mealLabel(meal.key), items)}
                         className="text-[11px] text-accent hover:underline"
                       >
-                        save as meal
+                        {t("save as meal", "sačuvaj kao obrok")}
                       </button>
                       <span className="text-xs text-muted">{mealCals} kcal</span>
                     </div>
@@ -549,6 +560,7 @@ function SaveMealModal({
   onSave: (name: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState(initialName);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={onClose}>
@@ -556,14 +568,14 @@ function SaveMealModal({
         className="w-full max-w-sm rounded-t-3xl border border-border bg-surface p-5 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-1 text-lg font-semibold">Save as meal 🍱</h2>
+        <h2 className="mb-1 text-lg font-semibold">{t("Save as meal 🍱", "Sačuvaj kao obrok 🍱")}</h2>
         <p className="mb-4 text-xs text-muted">
-          {itemCount} item{itemCount === 1 ? "" : "s"} · {calories} kcal — re-add it any day in one tap.
+          {itemCount} {t("item", "stavka")}{itemCount === 1 ? "" : t("s", "")} · {calories} kcal — {t("re-add it any day in one tap.", "dodaj ga bilo kog dana jednim dodirom.")}
         </p>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Meal name (e.g. My breakfast)"
+          placeholder={t("Meal name (e.g. My breakfast)", "Naziv obroka (npr. Moj doručak)")}
           maxLength={80}
           autoFocus
           className="mb-4 w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
@@ -574,10 +586,10 @@ function SaveMealModal({
             disabled={!name.trim()}
             className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-black disabled:opacity-50"
           >
-            Save meal
+            {t("Save meal", "Sačuvaj obrok")}
           </button>
           <button onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm text-muted">
-            Cancel
+            {t("Cancel", "Otkaži")}
           </button>
         </div>
       </div>
@@ -595,6 +607,7 @@ function GoalEditor({
   onSave: (n: number) => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const [val, setVal] = useState(String(current));
   return (
     <div className="flex items-center gap-2">
@@ -612,10 +625,10 @@ function GoalEditor({
         }}
         className="rounded-lg bg-accent px-2 py-1 font-medium text-black"
       >
-        Save
+        {t("Save", "Sačuvaj")}
       </button>
       <button onClick={onCancel} className="px-1">
-        Cancel
+        {t("Cancel", "Otkaži")}
       </button>
     </div>
   );

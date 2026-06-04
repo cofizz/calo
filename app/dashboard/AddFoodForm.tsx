@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from "../i18n-context";
 
 type AddInput = {
   name: string;
@@ -31,6 +32,7 @@ export default function AddFoodForm({
   onSaveToLibrary: (food: Omit<AddInput, "meal">) => Promise<void>;
   prefill: Prefill | null;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [food, setFood] = useState(""); // food name, e.g. "chicken" / "eggs"
   const [amount, setAmount] = useState(""); // "200g" or a count like "3"
@@ -83,7 +85,7 @@ export default function AddFoodForm({
   // and fills the macro fields from the result.
   async function lookup() {
     if (!food.trim()) {
-      setError("Type a food first, e.g. chicken or eggs");
+      setError(t("Type a food first, e.g. chicken or eggs", "Prvo upiši hranu, npr. piletina ili jaja"));
       return;
     }
     const q = [amount.trim(), food.trim()].filter(Boolean).join(" ");
@@ -94,7 +96,7 @@ export default function AddFoodForm({
       const res = await fetch(`/api/nutrition/lookup?q=${encodeURIComponent(q)}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Lookup failed");
+        setError(data.error ?? t("Lookup failed", "Pretraga nije uspela"));
         return;
       }
       const r = data.result;
@@ -104,9 +106,9 @@ export default function AddFoodForm({
       setProtein(String(r.protein));
       setCarbs(String(r.carbs));
       setFat(String(r.fat));
-      setLookupNote(`Filled from ${r.source}. Adjust if needed.`);
+      setLookupNote(t("Filled in. Adjust if needed.", "Popunjeno. Izmeni ako treba."));
     } catch {
-      setError("Network error during lookup");
+      setError(t("Network error during lookup", "Greška u mreži tokom pretrage"));
     } finally {
       setLooking(false);
     }
@@ -117,8 +119,8 @@ export default function AddFoodForm({
     setError(null);
 
     const cal = Number(calories);
-    if (!food.trim()) return setError("Give the food a name");
-    if (!Number.isFinite(cal) || cal < 0) return setError("Enter valid calories");
+    if (!food.trim()) return setError(t("Give the food a name", "Daj hrani naziv"));
+    if (!Number.isFinite(cal) || cal < 0) return setError(t("Enter valid calories", "Unesi ispravne kalorije"));
 
     const payload = {
       name: entryName(),
@@ -137,7 +139,7 @@ export default function AddFoodForm({
       reset();
       setOpen(false);
     } else {
-      setError("Could not save — check your inputs");
+      setError(t("Could not save — check your inputs", "Nije sačuvano — proveri unose"));
     }
   }
 
@@ -147,7 +149,7 @@ export default function AddFoodForm({
         onClick={() => setOpen(true)}
         className="w-full rounded-2xl border border-dashed border-border bg-surface py-3 text-sm font-medium text-accent transition-colors hover:bg-surface-2"
       >
-        + Add food
+        + {t("Add food", "Dodaj hranu")}
       </button>
     );
   }
@@ -162,7 +164,7 @@ export default function AddFoodForm({
         <input
           value={food}
           onChange={(e) => setFood(e.target.value)}
-          placeholder="Food (e.g. chicken, eggs)"
+          placeholder={t("Food (e.g. chicken, eggs)", "Hrana (npr. piletina, jaja)")}
           maxLength={120}
           autoFocus
           className="min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
@@ -183,16 +185,16 @@ export default function AddFoodForm({
         disabled={looking}
         className="w-full rounded-xl border border-accent/40 bg-accent/10 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
       >
-        {looking ? "Looking up…" : "🔍 Look up calories"}
+        {looking ? t("Looking up…", "Tražim…") : `🔍 ${t("Look up calories", "Pronađi kalorije")}`}
       </button>
       {lookupNote && <p className="text-xs text-accent">{lookupNote}</p>}
 
-      <NumField label="Calories" value={calories} onChange={setCalories} placeholder="0" />
+      <NumField label={t("Calories", "Kalorije")} value={calories} onChange={setCalories} placeholder="0" />
 
       <div className="grid grid-cols-3 gap-2">
-        <NumField label="Protein (g)" value={protein} onChange={setProtein} placeholder="0" />
-        <NumField label="Carbs (g)" value={carbs} onChange={setCarbs} placeholder="0" />
-        <NumField label="Fat (g)" value={fat} onChange={setFat} placeholder="0" />
+        <NumField label={t("Protein (g)", "Proteini (g)")} value={protein} onChange={setProtein} placeholder="0" />
+        <NumField label={t("Carbs (g)", "Ugljeni h. (g)")} value={carbs} onChange={setCarbs} placeholder="0" />
+        <NumField label={t("Fat (g)", "Masti (g)")} value={fat} onChange={setFat} placeholder="0" />
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -201,11 +203,16 @@ export default function AddFoodForm({
             key={m}
             type="button"
             onClick={() => setMeal(m)}
-            className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               meal === m ? "bg-accent text-black" : "bg-surface-2 text-muted"
             }`}
           >
-            {m}
+            {{
+              breakfast: t("Breakfast", "Doručak"),
+              lunch: t("Lunch", "Ručak"),
+              dinner: t("Dinner", "Večera"),
+              snack: t("Snack", "Užina"),
+            }[m]}
           </button>
         ))}
       </div>
@@ -217,7 +224,7 @@ export default function AddFoodForm({
           onChange={(e) => setSave(e.target.checked)}
           className="h-4 w-4 accent-[var(--accent)]"
         />
-        Save to my foods for quick re-adding
+        {t("Save to my foods for quick re-adding", "Sačuvaj u moju hranu za brzo dodavanje")}
       </label>
 
       {error && <p className="text-xs text-danger">{error}</p>}
@@ -228,7 +235,7 @@ export default function AddFoodForm({
           disabled={saving}
           className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Add"}
+          {saving ? t("Saving…", "Čuvam…") : t("Add", "Dodaj")}
         </button>
         <button
           type="button"
@@ -238,7 +245,7 @@ export default function AddFoodForm({
           }}
           className="rounded-xl border border-border px-4 py-2.5 text-sm text-muted"
         >
-          Cancel
+          {t("Cancel", "Otkaži")}
         </button>
       </div>
     </form>

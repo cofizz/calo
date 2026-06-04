@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useI18n } from "../i18n-context";
+import LangToggle from "../LangToggle";
 
 type Mode = "login" | "signup";
 
 export default function AuthForm() {
   const router = useRouter();
+  const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,6 +43,9 @@ export default function AuthForm() {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
+      <div className="mb-3 flex justify-end">
+        <LangToggle />
+      </div>
       {/* Tab switch between Log in and Sign up */}
       <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1 text-sm font-medium">
         {(["login", "signup"] as Mode[]).map((m) => (
@@ -54,14 +60,14 @@ export default function AuthForm() {
               mode === m ? "bg-accent text-black" : "text-muted hover:text-foreground"
             }`}
           >
-            {m === "login" ? "Log in" : "Sign up"}
+            {m === "login" ? t("Log in", "Prijava") : t("Sign up", "Registracija")}
           </button>
         ))}
       </div>
 
       <form onSubmit={submit} className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted">Email</label>
+          <label className="mb-1 block text-xs font-medium text-muted">{t("Email", "Imejl")}</label>
           <input
             type="email"
             inputMode="email"
@@ -75,7 +81,7 @@ export default function AuthForm() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-muted">
-            Password
+            {t("Password", "Lozinka")}
           </label>
           <input
             type="password"
@@ -84,7 +90,7 @@ export default function AuthForm() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={mode === "signup" ? "At least 8 characters" : "••••••••"}
+            placeholder={mode === "signup" ? t("At least 8 characters", "Najmanje 8 znakova") : "••••••••"}
             className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent"
           />
         </div>
@@ -101,10 +107,10 @@ export default function AuthForm() {
           className="w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading
-            ? "Please wait…"
+            ? t("Please wait…", "Sačekajte…")
             : mode === "login"
-              ? "Log in"
-              : "Create account"}
+              ? t("Log in", "Prijavi se")
+              : t("Create account", "Napravi nalog")}
         </button>
       </form>
     </div>

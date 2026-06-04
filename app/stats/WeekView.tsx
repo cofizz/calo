@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { addDays, todayString } from "@/lib/date";
+import { useI18n } from "../i18n-context";
+import LangToggle from "../LangToggle";
 
 type DayStat = { day: string; calories: number; protein: number; carbs: number; fat: number };
 
@@ -12,6 +14,7 @@ const RANGES = [
 ] as const;
 
 export default function WeekView({ dailyGoal }: { dailyGoal: number }) {
+  const { t } = useI18n();
   const [range, setRange] = useState<number>(7);
   const [stats, setStats] = useState<Map<string, DayStat>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -63,11 +66,14 @@ export default function WeekView({ dailyGoal }: { dailyGoal: number }) {
         <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">📊</span>
-            <span className="font-semibold">Stats</span>
+            <span className="font-semibold">{t("Stats", "Statistika")}</span>
           </div>
-          <Link href="/dashboard" className="text-xs text-muted hover:text-foreground">
-            ← Today
-          </Link>
+          <div className="flex items-center gap-3">
+            <LangToggle />
+            <Link href="/dashboard" className="text-xs text-muted hover:text-foreground">
+              ← {t("Today", "Danas")}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -82,7 +88,7 @@ export default function WeekView({ dailyGoal }: { dailyGoal: number }) {
                 range === r.days ? "bg-accent text-black" : "text-muted"
               }`}
             >
-              {r.label}
+              {r.days === 7 ? t("7 days", "7 dana") : t("30 days", "30 dana")}
             </button>
           ))}
         </div>
@@ -90,8 +96,8 @@ export default function WeekView({ dailyGoal }: { dailyGoal: number }) {
         {/* Calories bar chart */}
         <section className="mb-5 rounded-3xl border border-border bg-surface p-5">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-sm font-medium">Calories per day</h2>
-            <span className="text-xs text-muted">goal {dailyGoal.toLocaleString()}</span>
+            <h2 className="text-sm font-medium">{t("Calories per day", "Kalorije po danu")}</h2>
+            <span className="text-xs text-muted">{t("goal", "cilj")} {dailyGoal.toLocaleString()}</span>
           </div>
 
           <div className="relative h-44">
@@ -101,7 +107,7 @@ export default function WeekView({ dailyGoal }: { dailyGoal: number }) {
               style={{ top: goalTop }}
             >
               <span className="absolute -top-2 right-0 bg-surface px-1 text-[10px] text-accent">
-                goal
+                {t("goal", "cilj")}
               </span>
             </div>
 
@@ -135,18 +141,18 @@ export default function WeekView({ dailyGoal }: { dailyGoal: number }) {
         {/* Averages */}
         <section className="rounded-3xl border border-border bg-surface p-5">
           <h2 className="mb-3 text-sm font-medium">
-            Daily average{" "}
+            {t("Daily average", "Dnevni prosek")}{" "}
             <span className="text-xs font-normal text-muted">
-              ({loggedDays.length} logged {loggedDays.length === 1 ? "day" : "days"})
+              ({loggedDays.length} {loggedDays.length === 1 ? t("logged day", "unet dan") : t("logged days", "unetih dana")})
             </span>
           </h2>
           <div className="grid grid-cols-4 gap-2 text-center">
-            <Stat label="Calories" value={avg("calories")} />
-            <Stat label="Protein" value={avg("protein")} unit="g" />
-            <Stat label="Carbs" value={avg("carbs")} unit="g" />
-            <Stat label="Fat" value={avg("fat")} unit="g" />
+            <Stat label={t("Calories", "Kalorije")} value={avg("calories")} />
+            <Stat label={t("Protein", "Proteini")} value={avg("protein")} unit="g" />
+            <Stat label={t("Carbs", "Ugljeni h.")} value={avg("carbs")} unit="g" />
+            <Stat label={t("Fat", "Masti")} value={avg("fat")} unit="g" />
           </div>
-          {loading && <p className="mt-3 text-center text-xs text-muted">Loading…</p>}
+          {loading && <p className="mt-3 text-center text-xs text-muted">{t("Loading…", "Učitavanje…")}</p>}
         </section>
       </main>
     </div>

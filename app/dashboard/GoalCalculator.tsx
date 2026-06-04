@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ACTIVITY_LABELS, type Activity, type GoalType, type Sex } from "@/lib/calories";
+import { type Activity, type GoalType, type Sex } from "@/lib/calories";
+import { useI18n } from "../i18n-context";
 
 export type Profile = {
   sex: Sex | null;
@@ -31,6 +32,14 @@ export default function GoalCalculator({
   ) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
+  const activityLabels: Record<Activity, string> = {
+    sedentary: t("Sedentary (little/no exercise)", "Sedentaran (malo/nimalo vežbanja)"),
+    light: t("Light (1-3 days/week)", "Lagano (1-3 dana/nedeljno)"),
+    moderate: t("Moderate (3-5 days/week)", "Umereno (3-5 dana/nedeljno)"),
+    active: t("Active (6-7 days/week)", "Aktivno (6-7 dana/nedeljno)"),
+    very_active: t("Very active (athlete / physical job)", "Veoma aktivno (sportista / fizički posao)"),
+  };
   const [sex, setSex] = useState<Sex>(initial.sex ?? "male");
   const [age, setAge] = useState(initial.age ? String(initial.age) : "");
   const [height, setHeight] = useState(initial.heightCm ? String(initial.heightCm) : "");
@@ -50,7 +59,7 @@ export default function GoalCalculator({
       activity,
       goalType,
     };
-    if (!age || !height || !weight) return setError("Fill in age, height and weight");
+    if (!age || !height || !weight) return setError(t("Fill in age, height and weight", "Popuni godine, visinu i težinu"));
 
     setSaving(true);
     try {
@@ -61,7 +70,7 @@ export default function GoalCalculator({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Could not calculate");
+        setError(data.error ?? t("Could not calculate", "Nije moguće izračunati"));
         return;
       }
       onApplied(
@@ -72,7 +81,7 @@ export default function GoalCalculator({
         payload, // so the dashboard remembers these inputs for next time
       );
     } catch {
-      setError("Network error");
+      setError(t("Network error", "Greška u mreži"));
     } finally {
       setSaving(false);
     }
@@ -82,7 +91,7 @@ export default function GoalCalculator({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
       <div className="w-full max-w-md rounded-t-3xl border border-border bg-surface p-5 sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Calculate my goal</h2>
+          <h2 className="text-lg font-semibold">{t("Calculate my goal", "Izračunaj moj cilj")}</h2>
           <button onClick={onClose} className="text-muted hover:text-foreground" aria-label="Close">
             ✕
           </button>
@@ -95,38 +104,38 @@ export default function GoalCalculator({
               key={s}
               type="button"
               onClick={() => setSex(s)}
-              className={`rounded-lg py-2 capitalize transition-colors ${
+              className={`rounded-lg py-2 transition-colors ${
                 sex === s ? "bg-accent text-black" : "text-muted"
               }`}
             >
-              {s}
+              {s === "male" ? t("Male", "Muško") : t("Female", "Žensko")}
             </button>
           ))}
         </div>
 
         {/* Age / height / weight */}
         <div className="mb-3 grid grid-cols-3 gap-2">
-          <Field label="Age" value={age} onChange={setAge} suffix="yr" />
-          <Field label="Height" value={height} onChange={setHeight} suffix="cm" />
-          <Field label="Weight" value={weight} onChange={setWeight} suffix="kg" />
+          <Field label={t("Age", "Godine")} value={age} onChange={setAge} suffix={t("yr", "god")} />
+          <Field label={t("Height", "Visina")} value={height} onChange={setHeight} suffix="cm" />
+          <Field label={t("Weight", "Težina")} value={weight} onChange={setWeight} suffix="kg" />
         </div>
 
         {/* Activity */}
-        <label className="mb-1 block text-xs font-medium text-muted">Activity level</label>
+        <label className="mb-1 block text-xs font-medium text-muted">{t("Activity level", "Nivo aktivnosti")}</label>
         <select
           value={activity}
           onChange={(e) => setActivity(e.target.value as Activity)}
           className="mb-4 w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
         >
-          {(Object.keys(ACTIVITY_LABELS) as Activity[]).map((a) => (
+          {(Object.keys(activityLabels) as Activity[]).map((a) => (
             <option key={a} value={a}>
-              {ACTIVITY_LABELS[a]}
+              {activityLabels[a]}
             </option>
           ))}
         </select>
 
         {/* Goal */}
-        <label className="mb-1 block text-xs font-medium text-muted">Goal</label>
+        <label className="mb-1 block text-xs font-medium text-muted">{t("Goal", "Cilj")}</label>
         <div className="mb-4 grid grid-cols-3 gap-2">
           {GOALS.map((g) => (
             <button
@@ -140,8 +149,12 @@ export default function GoalCalculator({
               }`}
             >
               <div className="text-lg">{g.icon}</div>
-              <div className="text-sm font-medium">{g.label}</div>
-              <div className="text-[10px] text-muted">{g.hint}</div>
+              <div className="text-sm font-medium">
+                {g.key === "cut" ? t("Cut", "Skidanje") : g.key === "bulk" ? t("Bulk", "Masa") : t("Maintain", "Održavanje")}
+              </div>
+              <div className="text-[10px] text-muted">
+                {g.key === "cut" ? t("lose fat", "gubi salo") : g.key === "bulk" ? t("gain muscle", "dobij mišiće") : t("stay same", "ostani isti")}
+              </div>
             </button>
           ))}
         </div>
@@ -153,10 +166,10 @@ export default function GoalCalculator({
           disabled={saving}
           className="w-full rounded-xl bg-accent py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? "Calculating…" : "Calculate & set goal"}
+          {saving ? t("Calculating…", "Računam…") : t("Calculate & set goal", "Izračunaj i postavi cilj")}
         </button>
         <p className="mt-3 text-center text-[11px] text-muted">
-          Estimate via the Mifflin-St Jeor formula. Not medical advice.
+          {t("Estimate via the Mifflin-St Jeor formula. Not medical advice.", "Procena po Mifflin-St Jeor formuli. Nije medicinski savet.")}
         </p>
       </div>
     </div>

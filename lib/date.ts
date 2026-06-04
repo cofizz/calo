@@ -20,13 +20,18 @@ export function addDays(day: string, delta: number): string {
 }
 
 // "Today", "Yesterday", or a friendly date like "Mon, Jun 3".
-export function friendlyDay(day: string): string {
+// Pass lang to localise the relative words + date.
+export function friendlyDay(day: string, lang: "en" | "sr" = "en"): string {
   const today = todayString();
-  if (day === today) return "Today";
-  if (day === addDays(today, -1)) return "Yesterday";
-  if (day === addDays(today, 1)) return "Tomorrow";
+  const rel = {
+    en: { today: "Today", yest: "Yesterday", tom: "Tomorrow" },
+    sr: { today: "Danas", yest: "Juče", tom: "Sutra" },
+  }[lang];
+  if (day === today) return rel.today;
+  if (day === addDays(today, -1)) return rel.yest;
+  if (day === addDays(today, 1)) return rel.tom;
   const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return new Date(y, m - 1, d).toLocaleDateString(lang === "sr" ? "sr-RS" : undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",

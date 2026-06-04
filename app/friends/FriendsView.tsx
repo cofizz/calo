@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { todayString } from "@/lib/date";
+import { useI18n } from "../i18n-context";
+import LangToggle from "../LangToggle";
 
 type LeaderRow = {
   id: string;
@@ -17,6 +19,7 @@ type Request = { id: string; name: string };
 type StepRow = { rank: number; id: string; name: string; steps: number; isMe: boolean };
 
 export default function FriendsView() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"streaks" | "steps">("streaks");
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
   const [requests, setRequests] = useState<Request[]>([]);
@@ -75,17 +78,19 @@ export default function FriendsView() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMsg({ text: data.error ?? "Could not send", ok: false });
+        setMsg({ text: data.error ?? t("Could not send", "Slanje nije uspelo"), ok: false });
         return;
       }
       setMsg({
-        text: data.accepted ? "You're now friends! 🎉" : "Request sent! 📨",
+        text: data.accepted
+          ? t("You're now friends! 🎉", "Sad ste prijatelji! 🎉")
+          : t("Request sent! 📨", "Zahtev poslat! 📨"),
         ok: true,
       });
       setEmail("");
       load();
     } catch {
-      setMsg({ text: "Network error", ok: false });
+      setMsg({ text: t("Network error", "Greška u mreži"), ok: false });
     } finally {
       setSending(false);
     }
@@ -104,11 +109,14 @@ export default function FriendsView() {
         <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">👥</span>
-            <span className="font-semibold">Friends</span>
+            <span className="font-semibold">{t("Friends", "Prijatelji")}</span>
           </div>
-          <Link href="/dashboard" className="text-xs text-muted hover:text-foreground">
-            ← Today
-          </Link>
+          <div className="flex items-center gap-3">
+            <LangToggle />
+            <Link href="/dashboard" className="text-xs text-muted hover:text-foreground">
+              ← {t("Today", "Danas")}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -119,13 +127,13 @@ export default function FriendsView() {
             onClick={() => setTab("streaks")}
             className={`rounded-lg py-2 transition-colors ${tab === "streaks" ? "bg-accent text-black" : "text-muted"}`}
           >
-            🔥 Streaks
+            🔥 {t("Streaks", "Nizovi")}
           </button>
           <button
             onClick={() => setTab("steps")}
             className={`rounded-lg py-2 transition-colors ${tab === "steps" ? "bg-accent text-black" : "text-muted"}`}
           >
-            👟 Steps (global)
+            👟 {t("Steps (global)", "Koraci (svi)")}
           </button>
         </div>
 
@@ -149,7 +157,7 @@ export default function FriendsView() {
       <>
         {/* Add friend */}
         <form onSubmit={addFriend} className="mb-5 rounded-2xl border border-border bg-surface p-4">
-          <p className="mb-2 text-sm font-medium">Add a friend</p>
+          <p className="mb-2 text-sm font-medium">{t("Add a friend", "Dodaj prijatelja")}</p>
           <div className="flex gap-2">
             <input
               type="email"
@@ -157,7 +165,7 @@ export default function FriendsView() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="their@email.com"
+              placeholder={t("their@email.com", "njihov@imejl.com")}
               className="min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
             />
             <button
@@ -165,7 +173,7 @@ export default function FriendsView() {
               disabled={sending}
               className="shrink-0 rounded-xl bg-accent px-4 text-sm font-semibold text-black disabled:opacity-50"
             >
-              {sending ? "…" : "Add"}
+              {sending ? "…" : t("Add", "Dodaj")}
             </button>
           </div>
           {msg && (
@@ -176,7 +184,7 @@ export default function FriendsView() {
         {/* Incoming requests */}
         {requests.length > 0 && (
           <div className="mb-5">
-            <p className="mb-2 px-1 text-xs font-medium text-muted">Friend requests</p>
+            <p className="mb-2 px-1 text-xs font-medium text-muted">{t("Friend requests", "Zahtevi za prijateljstvo")}</p>
             <ul className="space-y-2">
               {requests.map((r) => (
                 <li
@@ -189,13 +197,13 @@ export default function FriendsView() {
                       onClick={() => respond(r.id, true)}
                       className="rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-black"
                     >
-                      Accept
+                      {t("Accept", "Prihvati")}
                     </button>
                     <button
                       onClick={() => respond(r.id, false)}
                       className="rounded-lg border border-border px-3 py-1 text-xs text-muted"
                     >
-                      Decline
+                      {t("Decline", "Odbij")}
                     </button>
                   </div>
                 </li>
@@ -205,13 +213,13 @@ export default function FriendsView() {
         )}
 
         {/* Leaderboard */}
-        <p className="mb-2 px-1 text-xs font-medium text-muted">🔥 Streak leaderboard</p>
+        <p className="mb-2 px-1 text-xs font-medium text-muted">🔥 {t("Streak leaderboard", "Rang lista nizova")}</p>
         {loading ? (
-          <p className="py-8 text-center text-sm text-muted">Loading…</p>
+          <p className="py-8 text-center text-sm text-muted">{t("Loading…", "Učitavanje…")}</p>
         ) : leaderboard.length <= 1 ? (
           <div className="rounded-2xl border border-border bg-surface p-6 text-center">
             <p className="text-sm text-muted">
-              No friends yet. Add one above to start competing on streaks! 🏆
+              {t("No friends yet. Add one above to start competing on streaks! 🏆", "Još nemaš prijatelje. Dodaj nekog gore da se takmičite u nizovima! 🏆")}
             </p>
           </div>
         ) : (
@@ -226,13 +234,13 @@ export default function FriendsView() {
                 <span className="w-6 text-center text-sm">{medal(i)}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
-                    {row.name} {row.isMe && <span className="text-xs text-muted">(you)</span>}
+                    {row.name} {row.isMe && <span className="text-xs text-muted">({t("you", "ti")})</span>}
                   </p>
-                  <p className="text-xs text-muted">{row.todayPct}% of goal today</p>
+                  <p className="text-xs text-muted">{row.todayPct}% {t("of goal today", "cilja danas")}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-orange-400">🔥 {row.current}</p>
-                  <p className="text-[10px] text-muted">best {row.best}</p>
+                  <p className="text-[10px] text-muted">{t("best", "najbolji")} {row.best}</p>
                 </div>
               </li>
             ))}
@@ -256,6 +264,7 @@ function StepsBoard({
   me: StepRow | null;
   loading: boolean;
 }) {
+  const { t } = useI18n();
   const medal = (rank: number) =>
     rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}.`;
   const meInTop = me && board.some((r) => r.isMe);
@@ -270,17 +279,17 @@ function StepsBoard({
             onClick={() => setPeriod(p)}
             className={`rounded-lg py-1.5 transition-colors ${period === p ? "bg-accent text-black" : "text-muted"}`}
           >
-            {p === "today" ? "Today" : "This week"}
+            {p === "today" ? t("Today", "Danas") : t("This week", "Ove nedelje")}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <p className="py-8 text-center text-sm text-muted">Loading…</p>
+        <p className="py-8 text-center text-sm text-muted">{t("Loading…", "Učitavanje…")}</p>
       ) : board.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-6 text-center">
           <p className="text-sm text-muted">
-            No steps logged yet anywhere. Be the first — start walk mode! 🚶
+            {t("No steps logged yet anywhere. Be the first — start walk mode! 🚶", "Još niko nije uneo korake. Budi prvi — pokreni brojač! 🚶")}
           </p>
         </div>
       ) : (
@@ -295,7 +304,7 @@ function StepsBoard({
               >
                 <span className="w-7 text-center text-sm">{medal(row.rank)}</span>
                 <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {row.name} {row.isMe && <span className="text-xs text-muted">(you)</span>}
+                  {row.name} {row.isMe && <span className="text-xs text-muted">({t("you","ti")})</span>}
                 </p>
                 <span className="text-sm font-bold text-accent">{row.steps.toLocaleString()}</span>
               </li>
@@ -306,7 +315,7 @@ function StepsBoard({
             <div className="mt-2 flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3">
               <span className="w-7 text-center text-sm">{me.rank}.</span>
               <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                {me.name} <span className="text-xs text-muted">(you)</span>
+                {me.name} <span className="text-xs text-muted">({t("you","ti")})</span>
               </p>
               <span className="text-sm font-bold text-accent">{me.steps.toLocaleString()}</span>
             </div>

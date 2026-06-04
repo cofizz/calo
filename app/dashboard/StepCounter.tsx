@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useI18n } from "../i18n-context";
 
 const STEP_GOAL = 10000;
 
 // Card showing today's steps + a live "walk mode" that counts steps from the
 // phone's motion sensor while the app is open.
 export default function StepCounter({ day }: { day: string }) {
+  const { t } = useI18n();
   const [steps, setSteps] = useState(0);
   const [walking, setWalking] = useState(false);
   const [session, setSession] = useState(0);
@@ -88,16 +90,16 @@ export default function StepCounter({ day }: { day: string }) {
       if (typeof Ctor.requestPermission === "function") {
         const res = await Ctor.requestPermission();
         if (res !== "granted") {
-          setHint("Motion permission denied. Allow it to count steps.");
+          setHint(t("Motion permission denied. Allow it to count steps.", "Dozvola za kretanje odbijena. Dozvoli da bismo brojali korake."));
           return;
         }
       }
     } catch {
-      setHint("Couldn't request motion access on this device.");
+      setHint(t("Couldn't request motion access on this device.", "Nije moguće tražiti pristup senzoru kretanja."));
       return;
     }
     if (typeof DeviceMotionEvent === "undefined") {
-      setHint("This device/browser has no motion sensor.");
+      setHint(t("This device/browser has no motion sensor.", "Ovaj uređaj/pregledač nema senzor kretanja."));
       return;
     }
     gotEvent.current = false;
@@ -107,7 +109,7 @@ export default function StepCounter({ day }: { day: string }) {
     // If no sensor events arrive shortly, the context probably isn't secure.
     setTimeout(() => {
       if (!gotEvent.current)
-        setHint("No motion data — needs HTTPS (works once deployed) or a real phone.");
+        setHint(t("No motion data — open it on your phone (needs HTTPS).", "Nema podataka o kretanju — otvori na telefonu (potreban HTTPS)."));
     }, 2500);
   }, [onMotion]);
 
@@ -128,10 +130,10 @@ export default function StepCounter({ day }: { day: string }) {
   return (
     <section className="mb-5 rounded-3xl border border-border bg-surface p-5">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm font-medium">👟 Steps today</span>
+        <span className="text-sm font-medium">👟 {t("Steps today", "Koraci danas")}</span>
         {!editing && !walking && (
           <button onClick={() => setEditing(true)} className="text-xs text-muted hover:text-foreground">
-            edit
+            {t("edit", "izmeni")}
           </button>
         )}
       </div>
@@ -160,13 +162,13 @@ export default function StepCounter({ day }: { day: string }) {
             {walking ? (
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm text-accent">
-                  🚶 Walking… <span className="font-semibold">+{session}</span> this session
+                  🚶 {t("Walking…", "Hodam…")} <span className="font-semibold">+{session}</span> {t("this session", "ova sesija")}
                 </span>
                 <button
                   onClick={stopWalking}
                   className="rounded-xl bg-danger/15 px-4 py-2 text-sm font-semibold text-danger"
                 >
-                  Stop
+                  {t("Stop", "Stop")}
                 </button>
               </div>
             ) : (
@@ -174,7 +176,7 @@ export default function StepCounter({ day }: { day: string }) {
                 onClick={startWalking}
                 className="w-full rounded-xl border border-accent/40 bg-accent/10 py-2.5 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
               >
-                🚶 Start walk mode
+                🚶 {t("Start walk mode", "Pokreni brojač koraka")}
               </button>
             )}
             {hint && <p className="mt-2 text-xs text-muted">{hint}</p>}
@@ -194,6 +196,7 @@ function StepEditor({
   onSave: (n: number) => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const [val, setVal] = useState(String(current));
   return (
     <div className="flex items-center gap-2">
@@ -213,10 +216,10 @@ function StepEditor({
         }}
         className="rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-black"
       >
-        Save
+        {t("Save", "Sačuvaj")}
       </button>
       <button onClick={onCancel} className="px-2 text-sm text-muted">
-        Cancel
+        {t("Cancel", "Otkaži")}
       </button>
     </div>
   );

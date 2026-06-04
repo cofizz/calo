@@ -35,6 +35,8 @@ model User {
 
   // Optional display name shown to friends (falls back to email prefix).
   name         String?
+  // UI language: "en" | "sr".
+  language     String      @default("en")
 
   createdAt    DateTime    @default(now())
   entries      FoodEntry[]
