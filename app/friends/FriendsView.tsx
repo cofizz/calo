@@ -27,6 +27,7 @@ export default function FriendsView() {
   const [sending, setSending] = useState(false);
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [focused, setFocused] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/friends?today=${todayString()}`, { cache: "no-store" });
@@ -111,20 +112,47 @@ export default function FriendsView() {
         <form onSubmit={addFriend} className="mb-5 rounded-2xl border border-border bg-surface p-4">
           <p className="mb-2 text-sm font-medium">{t("Add a friend", "Dodaj prijatelja")}</p>
           <div className="flex gap-2">
-            <input
-              type="text"
-              list="user-suggestions"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("username or email", "korisničko ime ili imejl")}
-              className="min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
-            />
-            <datalist id="user-suggestions">
-              {suggestions.map((u) => (
-                <option key={u} value={u} />
-              ))}
-            </datalist>
+            <div className="relative min-w-0 flex-1">
+              <input
+                type="text"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setTimeout(() => setFocused(false), 120)}
+                placeholder={t("username or email", "korisničko ime ili imejl")}
+                className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
+              />
+              {focused &&
+                (() => {
+                  const q = email.trim().toLowerCase();
+                  const matches = suggestions
+                    .filter((u) => u.includes(q))
+                    .slice(0, 8);
+                  if (matches.length === 0) return null;
+                  return (
+                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-2xl shadow-black/50">
+                      {matches.map((u) => (
+                        <button
+                          key={u}
+                          type="button"
+                          // onMouseDown fires before the input blur, so the click registers
+                          onMouseDown={() => {
+                            setEmail(u);
+                            setFocused(false);
+                          }}
+                          className="block w-full truncate rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-2"
+                        >
+                          @{u}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+            </div>
             <button
               type="submit"
               disabled={sending}
