@@ -147,9 +147,9 @@ export default function AddFoodForm({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full rounded-2xl border border-dashed border-border bg-surface py-3 text-sm font-medium text-accent transition-colors hover:bg-surface-2"
+        className="w-full rounded-2xl bg-accent py-4 text-base font-bold text-black shadow-lg shadow-accent/20 transition-opacity hover:opacity-90"
       >
-        + {t("Add food", "Dodaj hranu")}
+        ＋ {t("Add food", "Dodaj hranu")}
       </button>
     );
   }

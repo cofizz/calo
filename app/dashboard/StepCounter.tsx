@@ -174,7 +174,7 @@ export default function StepCounter({ day }: { day: string }) {
             ) : (
               <button
                 onClick={startWalking}
-                className="w-full rounded-xl border border-accent/40 bg-accent/10 py-2.5 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
+                className="w-full rounded-xl border border-dashed border-border bg-surface py-2 text-xs font-medium text-muted transition-colors hover:text-accent"
               >
                 🚶 {t("Start walk mode", "Pokreni brojač koraka")}
               </button>
