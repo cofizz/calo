@@ -119,15 +119,23 @@ export default function AddFoodForm({
     setError(null);
 
     const cal = Number(calories);
+    const p = Number(protein) || 0;
+    const c = Number(carbs) || 0;
+    const f = Number(fat) || 0;
     if (!food.trim()) return setError(t("Give the food a name", "Daj hrani naziv"));
     if (!Number.isFinite(cal) || cal < 0) return setError(t("Enter valid calories", "Unesi ispravne kalorije"));
+    // Don't allow logging a totally empty food.
+    if (cal === 0 && p === 0 && c === 0 && f === 0)
+      return setError(
+        t("Enter calories or macros first", "Prvo unesi kalorije ili makroe"),
+      );
 
     const payload = {
       name: entryName(),
       calories: Math.round(cal),
-      protein: Number(protein) || 0,
-      carbs: Number(carbs) || 0,
-      fat: Number(fat) || 0,
+      protein: p,
+      carbs: c,
+      fat: f,
     };
 
     setSaving(true);
