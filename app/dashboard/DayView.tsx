@@ -55,11 +55,13 @@ type Macros = { protein: number; carbs: number; fat: number };
 
 export default function DayView({
   email,
+  hasUsername,
   initialGoal,
   initialMacros,
   profile: initialProfile,
 }: {
   email: string;
+  hasUsername: boolean;
   initialGoal: number;
   initialMacros: Macros;
   profile: Profile;
@@ -90,6 +92,7 @@ export default function DayView({
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingReqs, setPendingReqs] = useState(0);
+  const [needsUsername, setNeedsUsername] = useState(!hasUsername);
 
   const loadEntries = useCallback(
     async (d: string) => {
@@ -349,6 +352,10 @@ export default function DayView({
       </header>
 
       <main className="mx-auto w-full max-w-md flex-1 px-4 pb-28 pt-4">
+        {needsUsername && (
+          <SetUsernameBanner onDone={() => setNeedsUsername(false)} />
+        )}
+
         {/* Date navigation */}
         <div className="mb-4 flex items-center justify-between">
           <button
@@ -629,6 +636,66 @@ function SaveMealModal({
   );
 }
 
+
+// Shown only to accounts that don't have a username yet (pre-username signups).
+function SetUsernameBanner({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/username", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: value }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? t("Could not save", "Nije sačuvano"));
+        return;
+      }
+      onDone();
+    } catch {
+      setError(t("Network error", "Greška u mreži"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mb-4 rounded-2xl border border-accent/40 bg-accent/10 p-4">
+      <p className="text-sm font-semibold">{t("Pick a username 👋", "Izaberi korisničko ime 👋")}</p>
+      <p className="mt-0.5 text-xs text-muted">
+        {t(
+          "So friends can find and add you.",
+          "Da te prijatelji mogu pronaći i dodati.",
+        )}
+      </p>
+      <div className="mt-3 flex gap-2">
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={t("e.g. filip21", "npr. filip21")}
+          maxLength={20}
+          autoCapitalize="none"
+          className="min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        />
+        <button
+          onClick={save}
+          disabled={saving || value.trim().length < 3}
+          className="shrink-0 rounded-xl bg-accent px-4 text-sm font-semibold text-black disabled:opacity-50"
+        >
+          {saving ? "…" : t("Save", "Sačuvaj")}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+    </div>
+  );
+}
 
 function GoalEditor({
   current,

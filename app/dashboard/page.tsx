@@ -13,6 +13,7 @@ export default async function DashboardPage() {
     where: { id: userId },
     select: {
       email: true,
+      username: true,
       dailyGoal: true,
       proteinGoal: true,
       carbsGoal: true,
@@ -39,6 +40,7 @@ export default async function DashboardPage() {
   return (
     <DayView
       email={user.email}
+      hasUsername={!!user.username}
       initialGoal={user.dailyGoal}
       initialMacros={{ protein: user.proteinGoal, carbs: user.carbsGoal, fat: user.fatGoal }}
       profile={profile}
