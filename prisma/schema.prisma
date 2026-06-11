@@ -44,22 +44,8 @@ model User {
   entries      FoodEntry[]
   savedFoods   SavedFood[]
   meals        Meal[]
-  stepLogs     StepLog[]
   friendsSent     Friendship[] @relation("requester")
   friendsReceived Friendship[] @relation("addressee")
-}
-
-// Steps walked on a given day (one row per user per day).
-model StepLog {
-  id     String @id @default(cuid())
-  day    String // YYYY-MM-DD (user's local date)
-  steps  Int    @default(0)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-
-  @@unique([userId, day])
-  @@index([userId])
-  @@index([day])
 }
 
 // A friendship / friend request between two users.

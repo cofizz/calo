@@ -8,7 +8,6 @@ import { useI18n } from "../i18n-context";
 import LangToggle from "../LangToggle";
 import CalorieRing from "./CalorieRing";
 import MacroRing from "./MacroRing";
-import StepCounter from "./StepCounter";
 import AddFoodForm, { type Prefill } from "./AddFoodForm";
 import GoalCalculator, { type Profile } from "./GoalCalculator";
 import DogReaction, { getDogReaction } from "./DogReaction";
@@ -334,9 +333,6 @@ export default function DayView({
                         </span>
                       )}
                     </Link>
-                    <Link href="/leaderboard" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">
-                      🏆 {t("Leaderboard", "Rang lista")}
-                    </Link>
                     <button
                       onClick={logout}
                       className="mt-1 block w-full rounded-lg border-t border-border px-3 py-2 text-left text-sm text-muted hover:bg-surface-2"
@@ -434,9 +430,6 @@ export default function DayView({
             )}
           </div>
         </section>
-
-        {/* Steps */}
-        <StepCounter day={day} />
 
         {/* Saved meals quick-add */}
         {meals.length > 0 && (

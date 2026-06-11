@@ -61,11 +61,6 @@ export const goalSchema = z.object({
   dailyGoal: z.number().int().min(500).max(15000),
 });
 
-export const stepsSchema = z.object({
-  day: daySchema,
-  steps: z.number().int().min(0).max(300000),
-});
-
 export const macrosSchema = z.object({
   proteinGoal: z.number().int().min(0).max(1000),
   carbsGoal: z.number().int().min(0).max(2000),
